@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #212121;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #root-note {
+            margin-bottom: 50px;
+            font-size: 20px;
+            background-color: #424242;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #keys-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 80vw;
+        }
+        .key {
+            width: 20vw;
+            height: 20vw;
+            margin: 2vw;
+            background: #424242;
+            border-radius: 10%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 20px;
+        }
+    </style>
+    <select id="root-note">
+        <option value="261.63">C</option>
+        <option value="293.66">D</option>
+        <option value="329.63">E</option>
+        <option value="349.23">F</option>
+        <option value="392.00">G</option>
+        <option value="440.00">A</option>
+        <option value="493.88">B</option>
+    </select>
+    <div id="keys-container"></div>
+    <script>
+    const minorPentatonicScale = [0, 3, 5, 7, 10];
+    const intervalNotations = ['1', 'b3', '4', '5', 'b7'];
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const rootNoteSelect = document.getElementById('root-note');
+    const keysContainer = document.getElementById('keys-container');
+
+    let rootNoteFrequency = rootNoteSelect.value;
+
+    function createKeys() {
+        keysContainer.innerHTML = '';
+        minorPentatonicScale.forEach((_, index) => {
+            const key = document.createElement('div');
+            key.classList.add('key');
+            key.innerText = intervalNotations[index];
+            key.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                const noteFrequency = rootNoteFrequency * Math.pow(2, minorPentatonicScale[index] / 12);
+                oscillator.frequency.value = noteFrequency;
+                oscillator.connect(audioCtx.destination);
+                oscillator.start();
+            });
+            key.addEventListener('touchend', () => {
+                oscillator.disconnect(audioCtx.destination);
+            });
+            keysContainer.appendChild(key);
+        });
+    }
+
+    rootNoteSelect.addEventListener('change', () => {
+        rootNoteFrequency = rootNoteSelect.value;
+        createKeys();
+    });
+
+    createKeys();
+    </script>
+</body>
+</html>
