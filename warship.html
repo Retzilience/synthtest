@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Retzilence's Ultra Realistic Naval Warship Game</title>
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            grid-gap: 5px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .grid div {
+            width: 100%;
+            padding-top: 100%;
+            background-color: #ddd;
+            position: relative;
+        }
+
+        .grid div::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #bbb;
+            transform: scale(0.98);
+            transition: background-color 0.5s;
+        }
+
+        #playerBoard div[data-ship="true"]::after {
+            background-color: #555;
+        }
+
+        .grid div[data-hit="miss"]::after {
+            background-color: #fff;
+        }
+
+        .grid div[data-hit="hit"]::after,
+        #playerBoard div[data-ship="true"][data-hit="hit"]::after,
+        #aiBoard div[data-ship="true"][data-hit="hit"]::after {
+            background-color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Retzilence's Ultra Realistic Naval Warship Game</h1>
+
+    <div id="playerBoard" class="grid"></div>
+    <br />
+    <div id="aiBoard" class="grid"></div>
+
+    <script>
+    const shipSizes = [1, 1, 1, 2, 2];
+    
+    function createBoard(boardId, size) {
+      let board = document.getElementById(boardId);
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          let cell = document.createElement('div');
+          cell.dataset.id = `${i}${j}`;
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    function canPlaceShip(board, startCell, shipSize, orientation) {
+      let startIndex = Array.from(board.children).indexOf(startCell);
+      for (let i = 0; i < shipSize; i++) {
+        if (orientation === 'horizontal') {
+          if (startIndex % 16 + i >= 16 || board.children[startIndex + i].dataset.ship) {
+            return false;
+          }
+        } else {
+          if (startIndex + 16 * i >= 256 || board.children[startIndex + 16 * i].dataset.ship) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function placeShip(board, startCell, shipSize, orientation) {
+      let startIndex = Array.from(board.children).indexOf(startCell);
+      for (let i = 0; i < shipSize; i++) {
+        if (orientation === 'horizontal') {
+          board.children[startIndex + i].dataset.ship = 'true';
+        } else {
+          board.children[startIndex + 16 * i].dataset.ship = 'true';
+        }
+      }
+    }
+
+    function placeShips(boardId, shipSizes) {
+      let board = document.getElementById(boardId);
+      for (let size of shipSizes) {
+        let placed = false;
+        while (!placed) {
+          let randomIndex = Math.floor(Math.random() * board.children.length);
+          let randomCell = board.children[randomIndex];
+          let randomOrientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+  
+          if (canPlaceShip(board, randomCell, size, randomOrientation)) {
+            placeShip(board, randomCell, size, randomOrientation);
+            placed = true;
+          }
+        }
+      }
+    }
+
+    function aiTurn() {
+      let playerBoard = document.getElementById('playerBoard');
+      let randomCell;
+      do {
+        randomCell = playerBoard.children[Math.floor(Math.random() * playerBoard.children.length)];
+      } while (randomCell.dataset.hit)
+      if (randomCell.dataset.ship === 'true') {
+        randomCell.dataset.hit = 'hit';
+      } else {
+        randomCell.dataset.hit = 'miss';
+      }
+      checkWinCondition('playerBoard', shipSizes);
+    }
+
+    function checkWinCondition(boardId, shipSizes) {
+      let hitCount = document.querySelectorAll(`#${boardId} div[data-hit='hit']`).length;
+      if(hitCount === shipSizes.reduce((a, b) => a + b, 0)) {
+        if(boardId === 'playerBoard') {
+            alert("AI wins!");
+            location.reload();
+        } else {
+            alert("Player wins!");
+            location.reload();
+        }
+      }
+    }
+
+    createBoard('playerBoard', 16);
+    createBoard('aiBoard', 16);
+    placeShips('playerBoard', shipSizes);
+    placeShips('aiBoard', shipSizes);
+
+    document.getElementById('aiBoard').addEventListener('click', function(event) {
+      let cell = event.target;
+      if (cell.dataset.hit) {
+        return;
+      }
+      if (cell.dataset.ship === 'true') {
+        cell.dataset.hit = 'hit';
+      } else {
+        cell.dataset.hit = 'miss';
+      }
+      checkWinCondition('aiBoard', shipSizes);
+      setTimeout(aiTurn, 500);
+    });
+    </script>
+</body>
+</html>
